@@ -6,4 +6,4 @@ This work is based on [Large-scale L-BFGS using MapReduce](http://papers.nips.cc
 
 Here is an example of the speed-up (5000 features and 200 000 samples):
 
-
+![](https://github.com/HugoooPerrin/Quasi-Newton_on_GPU/blob/master/screen.png)
