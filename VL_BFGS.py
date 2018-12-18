@@ -43,7 +43,7 @@ def two_loops(grad_w, s_list, y_list):
     
     r (ndarray, shape [p, p]) : the L-BFGS direction
     '''
-    q = grad_w.clone()
+    q = grad_w.clone().cpu()
     alpha_list = []
     
     m = len(y_list)
@@ -157,11 +157,15 @@ def line_search(f, f_grad, c1, c2, current_f, current_grad, direction, X, y, lbd
         f2 = next_grad.matmul(direction).item()
         f3 = (c2 * current_grad.matmul(direction)).item()
 
+        """
+        Here the computation takes places on the CPU
+        because GPUs are slower when it comes to conditions
+        """
 
-        if next_f > f1:                        # Armijo condition
+        if next_f > f1:                                # Armijo condition
             beta = step
             step = (alpha + beta) / 2
-        elif f2 < f3:                          # Wolfe condition 
+        elif f2 < f3:                                  # Wolfe condition 
             alpha = step
             if beta == 'inf':
                 step = 2 * alpha
@@ -188,7 +192,7 @@ class lbfgs(object):
         
         self.c1 = 0.0001
         self.c2 = 0.9
-        self.max_iter = 50
+        self.max_iter = 20
 
         self.m = m
 
@@ -203,27 +207,45 @@ class lbfgs(object):
 
     def fit(self, X, target, w0, lbda):
 
+        t0 = time()
+
+        #========================================
+        # Moving data to computing device
+
         X = X.to(self.device)
         target = target.to(self.device)
-
         w = w0.to(self.device)
 
-        t0 = time()
+        t1 = time()
+
+        #========================================
+        # Computing first value of the objective function
 
         new_f = self.f(X, target, lbda, w).item()
         self.all_f.append(new_f)
-        
+
+        #========================================
+        # Computing first gradient
+
         grad_w = self.f_grad(X, target, lbda, w)
-        
+
+        #========================================
+        # Creating memory lists
+
         y_list = []
         s_list = []
-
 
         for k in range(self.max_iter):
             
 
             #========================================
             # Compute the search direction
+
+            """
+            Both two_loop functions are computed on the CPU
+            because they outperform GPUs when it comes to
+            small sequential computations.
+            """
 
             if self.vector_free:
                 dot_matrix, b = dot_product(y_list, s_list, grad_w)
@@ -232,11 +254,11 @@ class lbfgs(object):
                 b = b.cpu()
 
                 d = two_loops_vector_free(dot_matrix, b)
-
                 d = d.to(self.device)
 
             else:
                 d = two_loops(grad_w, s_list, y_list)
+                d = d.to(self.device)
 
 
             #========================================
@@ -262,8 +284,8 @@ class lbfgs(object):
             #========================================
             # Update the memory
             
-            y_list.append(y.clone())
-            s_list.append(s.clone())
+            y_list.append(y.cpu())
+            s_list.append(s.cpu())
 
             if len(y_list) > self.m:
                 y_list.pop(0)
@@ -282,6 +304,7 @@ class lbfgs(object):
                 
             grad_w = new_grad
 
-        total_time = time() - t0
-
-        return w.cpu().numpy(), np.array(self.all_f), total_time
+        computing_time = time() - t0
+        communication_time = t1 - t0
+        
+        return w.cpu().numpy(), np.array(self.all_f), computing_time, communication_time
