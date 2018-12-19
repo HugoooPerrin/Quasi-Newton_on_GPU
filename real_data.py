@@ -10,7 +10,7 @@
 import numpy as np
 import torch
 
-from scipy.optimize import fmin_l_bfgs_b
+from sklearn.metrics import log_loss
 
 # Random
 from torch.distributions.normal import Normal
@@ -25,7 +25,7 @@ from feature_engineering import *
 #================================ 1. DATA
 
 
-SIZE = 50000
+SIZE = 250000
 
 print('>> Loading data')
 X = pd.read_parquet('data/data_train.parquet')
@@ -40,7 +40,7 @@ X = feature_extractor.transform(X)
 
 print('>> To tensor')
 X = torch.tensor(X.values, dtype=torch.float)
-y = torch.tensor(y.values, dtype=torch.float)
+y = torch.tensor(y.values, dtype=torch.float).squeeze()
 
 print('>> Training on %2d samples and %2d features' % X.size())
 
@@ -61,35 +61,35 @@ f_grad = logistic_grad
 # CPU
 def cpu(X, y, w0, lbda):
     optimizer = lbfgs(f, f_grad, m=10, vector_free=False, device='cpu')
-    _, _, cpu_time_comp, cpu_time_com = optimizer.fit(X, y, w0, lbda)
+    _, obj, time_comp, time_com = optimizer.fit(X, y, w0, lbda)
 
-    return cpu_time_comp, cpu_time_com
+    return time_comp, time_com, obj[-1]
 
 
 # GPU
 def gpu(X, y, w0, lbda):
     optimizer = lbfgs(f, f_grad, m=10, vector_free=False, device='cuda:0')
-    _, _, gpu_time_comp, gpu_time_com = optimizer.fit(X, y, w0, lbda)
+    _, obj, time_comp, time_com = optimizer.fit(X, y, w0, lbda)
 
-    return gpu_time_comp, gpu_time_com
+    return time_comp, time_com, obj[-1]
 
 
 # GPU (vector free)
 def gpu_VL(X, y, w0, lbda):
     optimizer = lbfgs(f, f_grad, m=10, vector_free=True, device='cuda:0')
-    _, _, gpu_vl_time_comp, gpu_vl_time_com = optimizer.fit(X, y, w0, lbda)
+    _, obj, time_comp, time_com = optimizer.fit(X, y, w0, lbda)
 
-    return gpu_vl_time_comp, gpu_vl_time_com
+    return time_comp, time_com, obj[-1]
 
 
 # Test
-t1, t2 = gpu(X, y, w0, lbda)
+_, _, _ = gpu(X, y, w0, lbda)
 
 
 ##============================
 ## Monitoring time execution
 
-REPEAT = 10
+REPEAT = 15
 
 #==============
 # CPU
@@ -97,12 +97,14 @@ cpu_time_comp = []
 cpu_time_com = []
 for _ in range(REPEAT):
 
-    t1, t2 = cpu(X, y, w0, lbda)
+    w0 = torch.rand(X.size(1))
+    t1, t2, loss = cpu(X, y, w0, lbda)
     cpu_time_comp.append(t1)
     cpu_time_com.append(t2)
 
 print('\n>> CPU computing time: %.2fs +-%.2fs' % (np.mean(cpu_time_comp), np.std(cpu_time_comp)))
-print('>> CPU communication time: %.2fs +-%.2fs\n' % (np.mean(cpu_time_com), np.std(cpu_time_com)))
+print('>> CPU communication time: %.2fs +-%.2fs' % (np.mean(cpu_time_com), np.std(cpu_time_com)))
+print('Reached logloss: %.3f\n' % loss)
 
 
 #==============
@@ -111,12 +113,14 @@ gpu_time_comp = []
 gpu_time_com = []
 for _ in range(REPEAT):
 
-    t1, t2 = gpu(X, y, w0, lbda)
+    w0 = torch.rand(X.size(1))
+    t1, t2, loss = gpu(X, y, w0, lbda)
     gpu_time_comp.append(t1)
     gpu_time_com.append(t2)
 
 print('>> GPU computing time: %.2fs +-%.2fs' % (np.mean(gpu_time_comp), np.std(gpu_time_comp)))
-print('>> GPU communication time: %.2fs +-%.2fs\n' % (np.mean(gpu_time_com), np.std(gpu_time_com)))
+print('>> GPU communication time: %.2fs +-%.2fs' % (np.mean(gpu_time_com), np.std(gpu_time_com)))
+print('Reached logloss: %.3f\n' % loss)
 
 
 #==============
@@ -125,10 +129,11 @@ gpu_vl_time_comp = []
 gpu_vl_time_com = []
 for _ in range(REPEAT):
 
-    X, y = simulate()
-    t1, t2 = gpu_VL(X, y, w0, lbda)
+    w0 = torch.rand(X.size(1))
+    t1, t2, loss = gpu_VL(X, y, w0, lbda)
     gpu_vl_time_comp.append(t1)
     gpu_vl_time_com.append(t2)
 
 print('>> GPU (vector free) computing time: %.2fs +-%.2fs' % (np.mean(gpu_vl_time_comp), np.std(gpu_vl_time_comp)))
 print('>> GPU (vector free) communicating time: %.2fs +-%.2fs' % (np.mean(gpu_vl_time_com), np.std(gpu_vl_time_com)))
+print('Reached logloss: %.3f\n' % loss)

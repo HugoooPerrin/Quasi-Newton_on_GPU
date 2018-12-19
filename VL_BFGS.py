@@ -304,7 +304,7 @@ class lbfgs(object):
                 
             grad_w = new_grad
 
-        computing_time = time() - t0
+        computing_time = time() - t1
         communication_time = t1 - t0
         
         return w.cpu().numpy(), np.array(self.all_f), computing_time, communication_time
