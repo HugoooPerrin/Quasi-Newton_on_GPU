@@ -28,15 +28,11 @@ from feature_engineering import *
 SIZE = 250000
 
 print('>> Loading data')
-X = pd.read_parquet('data/data_train.parquet')
+X = pd.read_parquet('data/data_train.csv')
 y = pd.read_csv('data/labels_train.csv')
 
 X = X[:SIZE]
 y = y[:SIZE]
-
-print('>> Feature engineering')
-feature_extractor = FeatureExtractor()
-X = feature_extractor.transform(X)
 
 print('>> To tensor')
 X = torch.tensor(X.values, dtype=torch.float)

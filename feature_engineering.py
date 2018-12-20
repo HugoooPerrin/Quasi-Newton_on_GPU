@@ -244,3 +244,20 @@ class FeatureExtractor(BaseEstimator, TransformerMixin):
         
 
         return data
+
+
+
+#=========================================================================================================
+#=========================================================================================================
+#================================ 3. MAIN
+
+if __name__ == '__main__':
+
+    print('>> Loading data')
+    X = pd.read_parquet('data/data_train.parquet')
+
+    print('>> Feature engineering')
+    feature_extractor = FeatureExtractor()
+    X = feature_extractor.transform(X)
+
+    X.to_csv('data/data_train.csv')
