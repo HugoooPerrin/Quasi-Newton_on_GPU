@@ -35,7 +35,7 @@ def simulate():
 
 
 # Parameters
-n_features = 5000
+n_features = 8000
 n_samples = 100000
 
 lbda = 0.1
@@ -74,6 +74,9 @@ def gpu_VL(X, y, w0, lbda):
 # Test
 X, y = simulate()
 t1, t2 = gpu(X, y, w0, lbda)
+
+
+print('>> Training on %2d samples and %2d features' % X.size())
 
 
 ##============================

@@ -25,17 +25,12 @@ from feature_engineering import *
 #================================ 1. DATA
 
 
-SIZE = 250000
-
 print('>> Loading data')
-X = pd.read_parquet('data/data_train.csv')
+X = np.load('data/data_train.npy')
 y = pd.read_csv('data/labels_train.csv')
 
-X = X[:SIZE]
-y = y[:SIZE]
-
 print('>> To tensor')
-X = torch.tensor(X.values, dtype=torch.float)
+X = torch.tensor(X, dtype=torch.float)
 y = torch.tensor(y.values, dtype=torch.float).squeeze()
 
 print('>> Training on %2d samples and %2d features' % X.size())
@@ -85,7 +80,7 @@ _, _, _ = gpu(X, y, w0, lbda)
 ##============================
 ## Monitoring time execution
 
-REPEAT = 15
+REPEAT = 10
 
 #==============
 # CPU

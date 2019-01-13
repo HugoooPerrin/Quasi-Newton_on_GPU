@@ -205,7 +205,7 @@ class FeatureExtractor(BaseEstimator, TransformerMixin):
 
     def __init__(self):
         
-        self.time_windows = ['3h', '5h', '10h', '20h']
+        self.time_windows = ['1h', '3h', '5h', '10h', '20h']
 
 
     def transform(self, data):
@@ -251,6 +251,7 @@ class FeatureExtractor(BaseEstimator, TransformerMixin):
 #=========================================================================================================
 #================================ 3. MAIN
 
+
 if __name__ == '__main__':
 
     print('>> Loading data')
@@ -260,4 +261,6 @@ if __name__ == '__main__':
     feature_extractor = FeatureExtractor()
     X = feature_extractor.transform(X)
 
-    X.to_csv('data/data_train.csv')
+    X = np.array(X, dtype=np.float32)
+
+    np.save(file='data/data_train.npy', arr=X)
