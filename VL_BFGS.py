@@ -31,7 +31,6 @@ def two_loops(grad_w, s_list, y_list):
     '''
     Parameters
     ----------
-    
     grad_w (ndarray, shape [p,]) : current gradient
         
     s_list (list[]) : the past m values of s
@@ -40,7 +39,6 @@ def two_loops(grad_w, s_list, y_list):
             
     Returns
     -------
-    
     r (ndarray, shape [p, p]) : the L-BFGS direction
     '''
     q = grad_w.clone().cpu()
@@ -78,14 +76,12 @@ def two_loops_vector_free(dot_matrix, b):
     '''
     Parameters
     ----------
-
     dot_matrix (ndarray, shape [2m + 1, 2m + 1]) : the precomputed dot product between all vectors
 
     b (ndarray, shape [2m + 1, n_features]) : all memory vectors and current gradient
             
     Returns
     -------
-    
     r (ndarray, shape [p, p]) : the L-BFGS direction
     '''
     m = int((dot_matrix.size(0) - 1) / 2)
@@ -122,6 +118,21 @@ def two_loops_vector_free(dot_matrix, b):
 
 
 def dot_product(y_list, s_list, grad_w):
+    """    
+    Parameters
+    ----------
+    y_list (list of m array of size n_features) : memory vectors y's
+
+    s_list (list of m array of size n_features) : memory vectors s's
+       
+    grad_w (ndarray, shape [n_features]) : current gradient
+
+    Returns
+    -------
+    dot_matrix (ndarray, shape [2m + 1, 2m + 1]) : the precomputed dot product between all vectors
+
+    b (ndarray, shape [2m + 1, n_features]) : all memory vectors and current gradient
+    """
     m = len(y_list)
     n_features = grad_w.size(0)
 
@@ -144,6 +155,9 @@ def dot_product(y_list, s_list, grad_w):
 
 
 def line_search(f, f_grad, c1, c2, current_f, current_grad, direction, X, y, lbda, w):
+    """
+    Find the best gradient descent step using the Armijo and Wolfe condition
+    """
     alpha = 0
     beta = 'inf'
     step = 1
@@ -158,8 +172,10 @@ def line_search(f, f_grad, c1, c2, current_f, current_grad, direction, X, y, lbd
         f3 = (c2 * current_grad.matmul(direction)).item()
 
         """
-        Here the computation takes places on the CPU
-        because GPUs are slower when it comes to conditions
+        (the method ".item()" bring back the scalars on CPU)
+
+        Here the computation takes places on the CPU because 
+        GPUs are slower when it comes to conditions (if statement)
         """
 
         if next_f > f1:                                # Armijo condition
@@ -174,11 +190,12 @@ def line_search(f, f_grad, c1, c2, current_f, current_grad, direction, X, y, lbd
         else:
             break
 
+    """
+    Since the step has already been done, we return the next value of the loss function
+    and the next value of gradient so as to prevent from recomputing it
+    """
+
     return step, next_f, next_grad 
-
-
-
-
 
 
 
@@ -244,7 +261,7 @@ class lbfgs(object):
             """
             Both two_loop functions are computed on the CPU
             because they outperform GPUs when it comes to
-            small sequential computations.
+            small sequential computations with numerous for-loops.
             """
 
             if self.vector_free:
@@ -284,6 +301,10 @@ class lbfgs(object):
             #========================================
             # Update the memory
             
+            """
+            The memory vectors are direcly stored on the CPU since the 
+            for-loops take place there
+            """
             y_list.append(y.cpu())
             s_list.append(s.cpu())
 
@@ -299,7 +320,7 @@ class lbfgs(object):
 
             l_inf_norm_grad = torch.max(torch.abs(new_grad)).item()
 
-            if l_inf_norm_grad < 1e-6:
+            if l_inf_norm_grad < 1e-5:
                 break
                 
             grad_w = new_grad

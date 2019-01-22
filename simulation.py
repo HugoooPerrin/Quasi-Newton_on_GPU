@@ -116,6 +116,8 @@ for n_feature, n_sample in zip(n_features, n_samples):
     print('   GPU computing time: %.2fs +-%.2fs' % (np.mean(gpu_time_comp), np.std(gpu_time_comp)))
     print('   GPU communication time: %.2fs +-%.2fs\n' % (np.mean(gpu_time_com), np.std(gpu_time_com)))
 
+    torch.cuda.empty_cache()
+
 
     #==============
     # GPU (vector free)
@@ -131,5 +133,7 @@ for n_feature, n_sample in zip(n_features, n_samples):
 
     print('   GPU (vector free) computing time: %.2fs +-%.2fs' % (np.mean(gpu_vl_time_comp), np.std(gpu_vl_time_comp)))
     print('   GPU (vector free) communicating time: %.2fs +-%.2fs\n' % (np.mean(gpu_vl_time_com), np.std(gpu_vl_time_com)))
+
+    torch.cuda.empty_cache()
 
     print('-------------------------------------------------\n')
