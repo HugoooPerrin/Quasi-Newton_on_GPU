@@ -7,3 +7,7 @@ The VL variant is from [Large-scale L-BFGS using MapReduce](http://papers.nips.c
 Here is an example of the speed-up (5 000 features and 200 000 samples):
 
 ![](https://github.com/HugoooPerrin/Quasi-Newton_on_GPU/blob/master/screen.png)
+
+Here is a more complete comparison according to the dimension:
+
+![](https://github.com/HugoooPerrin/Quasi-Newton_on_GPU/blob/master/runtime.png)
